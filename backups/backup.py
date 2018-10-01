@@ -4,15 +4,17 @@ import os
 import sys
 import socket
 import argparse
+import time
 
 #iniciar programa - flags
-parser = argparse.ArgumentParser()
-parser.add_argument('-b', default = "59001") #BSport
-parser.add_argument('-n', default = "localhost") #CSname
-parser.add_argument('-p', default = 58069) #CSport
-args = parser.parse_args()
-cs_snd = (args.n, args.p)
-cs_rcv = (args.n, args.b)
+def main(argv):
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-b', default = "59000") #BSport
+	parser.add_argument('-n', default = "localhost") #CSname
+	parser.add_argument('-p', default = 58069) #CSport
+	args = parser.parse_args()
+	cs_snd = (args.n, args.p)
+	cs_rcv = (args.n, args.b)
 
 
 #cria processo a parte para ligacao UDP e faz registo no CS
@@ -208,7 +210,48 @@ def get_backup_address(backup):
 	return (h,p)
 
 def bs_requests(name, req, item):
-	
+
+def main(argv):
+
+    user_input = ''
+   
+    # Gets user input according to the specifications. CSname= and CSport= might be used instead
+    #   of -n and -p, respectively
+    try:
+        opts, args = getopt.getopt(argv,"n:p:",["CSname=","CSport="])
+    except getopt.GetoptError:
+        print ('Usage: user -n <CSname> -p <CSport>')
+        exit_abnormally()
+    
+    # Checks if inserted data meets the requirements
+    for opt, arg in opts:
+        if opt in ("-n", "--CSname"):
+            global cs_name
+            cs_name = arg
+        elif opt in ("-p", "--CSport"):
+            try:
+                global cs_port
+                cs_port = int(arg)
+                if cs_port <= 0 or cs_port >= 65535:
+                    print ("Error: port must be a number between 0 and 65535")
+                    exit_abnormally()
+            except ValueError:
+                print ("Error: port must be a number")
+                exit_abnormally()
+    
+    # Waits for a command and handles it.
+    while True:
+        user_input = input().split()
+        if is_command(user_input, 'exit'):
+            exit_normally()
+        elif is_command(user_input, 'list'):
+            try:
+                list_command()
+            except ValueError:
+                print ("FPT ERR")
+                continue
+        elif is_command(user_input, 'request') and len(user_input) > 2:
+            request_command(get_sub_command(user_input))
 
 	
 
@@ -217,3 +260,6 @@ def bs_requests(name, req, item):
 	# 	msg = 'LSF ' + name + ' ' + item
 	# 	udp_send(h, p, msg)
 	# elif req == '
+
+if __name__ == "__main__":
+	main(sys.argv[1:])
