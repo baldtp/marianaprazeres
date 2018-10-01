@@ -17,6 +17,27 @@ HOST = "localhost"
 def avai_bs():
     return "1"
 
+def get_user_backup(name):
+	backup = ''
+
+	file = open("userlist.txt", "r")
+	for line in file.readlines():
+		if name in line:
+			line = line.split(',')
+			backup = line[2]
+	file.close()
+
+	return backup
+
+def get_backup_address(backup):	
+	file = open("backuplist.txt", "r")
+	for line in file.readlines():
+		if backup == line[0]:
+			h = line[2]
+			p = line[3]
+	file.close()
+	return (h,p)
+
 def udp_receive():
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.bind((HOST, PORT))
@@ -56,6 +77,7 @@ def login(log):
         file.write(user + "," + pw + "," + avai_bs())
         file.close()
         return "AUR NEW"
+
 def bs_register():
     try:
         pid = os.fork()
@@ -94,11 +116,14 @@ def bs_register():
 		        except ValueError:
 		        	udp_send(msg[1], int(msg[2]), 'UAR ERR')
 
-def handle_requests(msg):
+def handle_requests(msg):	
+	print(msg)
 	msg = msg.split(" ")
-	if msg[0] == "AUT":
+
+	if msg[0] == "AUT" and len(msg) == 3:
 		return login(msg)
-	elif msg[0] == 'DLU':
+	elif msg[3] == 'DLU':
+
 		msg = ''
 		file = open("userlist.txt", "r+")
 		new_f = file.readlines()
@@ -113,7 +138,7 @@ def handle_requests(msg):
 				file.write(line)				
 		file.close()
 		print(msg)
-		return msg
+		return "hello" #msg
 
 
 def tcp_requests():
@@ -133,7 +158,7 @@ def tcp_requests():
 			while True:
 				data = conn.recv(1024)
 				msg += data.decode()
-				conn.sendall(str.encode(handle_requests(msg)))
+				conn.sendall(str.encode(handle_requests(msg))) #partir mensagem ao meio e responder duas vezes
 				if not data:
 					break				
 			so.close()
@@ -148,35 +173,3 @@ while 1:
 	time.sleep(5)
 	print("running")
 
-def get_user_backup(name):
-	backup = ''
-
-	file = open("userlist.txt", "r")
-	for line in file.readlines():
-		if name in line:
-			line = line.split(',')
-			backup = line[2]
-	file.close()
-
-	return backup
-
-def get_backup_address(backup):	
-	file = open("backuplist.txt", "r")
-	for line in file.readlines():
-		if backup == line[0]:
-			h = line[2]
-			p = line[3]
-	file.close()
-
-	return (h,p)
-
-def bs_requests(name, req, item):
-	
-
-	
-
-
-	# elif req == 'LSD':
-	# 	msg = 'LSF ' + name + ' ' + item
-	# 	udp_send(h, p, msg)
-	# elif req == '

@@ -2,6 +2,7 @@
 
 import socket
 import argparse
+import sys
 
 #iniciar programa - flags
 parser = argparse.ArgumentParser()
@@ -11,20 +12,22 @@ args = parser.parse_args()
 HOST = args.n
 PORT = args.p
 
+USER = ''
+PASS = ''
 
-
-def request_tcp(out):
+def request_tcp(req, login):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((HOST, PORT))
-	print(str.encode(out))
-	s.send(str.encode(out))
+	if login != 0:
+		s.send(str.encode(login))
+	s.send(str.encode(req))
 	inc = s.recv(1024).decode()
 	return inc
 
 
 
 def authenticate(log):
-	data = request_tcp(log)
+	data = request_tcp(log, 0)
 	if data == "AUR OK":
 		print("\n\nAuthentication successful: You are now logged in!\n")
 		return True
@@ -44,6 +47,11 @@ def login():
 	log = input('Please enter your login: (example "login 84730 banana12")\n\nCommand: ')
 	l = log.split(" ")
 
+	global USER 
+	USER = l[1]
+	global PASS
+	PASS = l[2]
+
 	if l[0] == 'exit':
 		print('Bye Bye <3')
 		quit()
@@ -62,22 +70,22 @@ def menu():
 	cmd = input("Please choose one option and type the command:\n\t1 - Request backup of a chosen directory (backup [dir])\n\t\
 2 - List the previously stored directories (dirlist)\n\t3 - List files of a directory (filelist [dir])\n\t4 - Retrieve a\
 previously backed up directory (restore [dir])\n\t6 - Delete the backup of a directory (delete [dir])\n\t6 - Delete user (deluser)\n\t7 - Logout (logout)\n\nCommand: ")
+	
+
 	if cmd == 'deluser':
-		request_tcp("DLU")
+		msg = "AUT " + USER + " " + PASS
+		request_tcp(" DLU", msg)
 
 
 
+def main(argv):
 
+	print("\t WELCOME TO RC'S CLOUD BACKUP SYSTEM\n\n")
 
-print("\t WELCOME TO RC'S CLOUD BACKUP SYSTEM\n\n")
+	if login():
+		print(USER)
+		print(PASS)
+		menu()
 
-if login():
-	menu()
-
-# if log == True:
-# 	print("\n")
-
-
-
-
-# print('Received', repr(data))
+if __name__ == "__main__":
+    main(sys.argv[1:])
