@@ -8,7 +8,7 @@ import sys
 
 #iniciar programa - flags
 parser = argparse.ArgumentParser()
-parser.add_argument('-p', default = 58066) #CSport
+parser.add_argument('-p', default = 58068) #CSport
 args = parser.parse_args()
 PORT = args.p
 HOST = "localhost"
@@ -116,29 +116,35 @@ def bs_register():
 		        except ValueError:
 		        	udp_send(msg[1], int(msg[2]), 'UAR ERR')
 
-def handle_requests(msg):	
-	print(msg)
-	msg = msg.split(" ")
+def handle_requests(msg):
+	global USER
+
+	if len(msg) == 3:
+		USER = msg[1]
 
 	if msg[0] == "AUT" and len(msg) == 3:
 		return login(msg)
-	elif msg[3] == 'DLU':
-
+	elif msg[0] == 'DLU':
 		msg = ''
 		file = open("userlist.txt", "r+")
 		new_f = file.readlines()
+		file.seek(0)
 		for line in new_f:
-			if name in line: # falta login
-				line = line.split(',')
-				if len(line) != 3:
+			if USER in line: # falta login
+				print(line)
+				l = line.split(',')
+				if len(l) != 3:
+					print('escreveu')
 					file.write(line)
 					msg = 'DLR NOK'
 				msg = 'DLR OK'
 			else:
-				file.write(line)				
+				print('escreveu')
+				file.write(line)	
+		file.truncate()			
 		file.close()
 		print(msg)
-		return "hello" #msg
+		return msg
 
 
 def tcp_requests():
@@ -148,20 +154,42 @@ def tcp_requests():
 		exit("Could not create a child process")
 	if pid == 0:
 		while 1:
-			print("aqui")
-			msg = ''
+			print("TCP server on")
 			so = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			so.bind((HOST, PORT))
 			so.listen()
 			conn, addr = so.accept()
 			print('Connected by', addr)
+			prev = ""
+			msg = ''
 			while True:
 				data = conn.recv(1024)
 				msg += data.decode()
-				conn.sendall(str.encode(handle_requests(msg))) #partir mensagem ao meio e responder duas vezes
+				if len(msg.split()) > 3:
+					print("2 requests")
+					print(msg.split()[0:3])
+					print(msg.split()[3:])
+					if msg == prev:
+						conn.sendall(str.encode('debug'))
+					else:
+						prev = msg
+						conn.sendall(str.encode(handle_requests(msg.split()[0:3])))
+						conn.sendall(str.encode(handle_requests(msg.split()[3:])))
+
+				else:
+					print("login")
+					if msg == prev:
+						conn.sendall(str.encode('debug')) #partir mensagem ao meio e responder duas vezes
+					else:
+						prev = msg
+						conn.sendall(str.encode(handle_requests(msg.split()))) #partir mensagem ao meio e responder duas vezes
+
 				if not data:
-					break				
-			so.close()
+					print("TCP server off")
+					so.shutdown(1)
+					so.close()
+					break
+
 
 
 
