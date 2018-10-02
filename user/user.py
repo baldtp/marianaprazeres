@@ -7,7 +7,7 @@ import sys
 #iniciar programa - flags
 parser = argparse.ArgumentParser()
 parser.add_argument('-n', default = "localhost") #CSname
-parser.add_argument('-p', default = 58066) #CSport
+parser.add_argument('-p', default = 58068) #CSport
 args = parser.parse_args()
 HOST = args.n
 PORT = args.p
@@ -15,19 +15,38 @@ PORT = args.p
 USER = ''
 PASS = ''
 
+def send(s, msg):
+	totalsent = 0
+	while totalsent < len(msg):
+		sent = s.send(msg[totalsent:])
+		if sent == 0:
+			raise RuntimeError("socket connection broken")
+		totalsent = totalsent + sent
+
+
 def request_tcp(req, login):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((HOST, PORT))
+	log = ''
 	if login != 0:
-		s.send(str.encode(login))
-	s.send(str.encode(req))
+		print("request")
+		send(s, str.encode(login))
+		log = s.recv(1024).decode()
+		print(log)
+
+	print("1 message sent")
+	send(s, str.encode(req))
 	inc = s.recv(1024).decode()
+	while inc == log:
+		inc = s.recv(1024).decode()
+	s.close()
 	return inc
 
 
 
 def authenticate(log):
 	data = request_tcp(log, 0)
+	print(data)
 	if data == "AUR OK":
 		print("\n\nAuthentication successful: You are now logged in!\n")
 		return True
@@ -44,7 +63,7 @@ def authenticate(log):
 
 def login():
 
-	log = input('Please enter your login: (example "login 84730 banana12")\n\nCommand: ')
+	log = input('Please enter your login: (example "login 88888 banana12")\n\nCommand: ')
 	l = log.split(" ")
 
 	global USER 
@@ -74,7 +93,7 @@ previously backed up directory (restore [dir])\n\t6 - Delete the backup of a dir
 
 	if cmd == 'deluser':
 		msg = "AUT " + USER + " " + PASS
-		request_tcp(" DLU", msg)
+		print(request_tcp(" DLU", msg))
 
 
 
