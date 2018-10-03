@@ -147,6 +147,8 @@ def handle_requests(msg):
 		print(msg)
 		return msg
 
+	return "hello"
+
 
 def tcp_requests():
 	try:
@@ -167,18 +169,17 @@ def tcp_requests():
 				data = conn.recv(1024)
 				msg += data.decode()
 				if len(msg.split()) > 3:
-					print("2 requests")
-					print(msg.split()[0:3])
-					print(msg.split()[3:])
 					if msg == prev:
 						conn.sendall(str.encode('debug'))
 					else:
+						print("")
+						print(msg)
+						print("")
 						prev = msg
 						conn.sendall(str.encode(handle_requests(msg.split()[0:3])))
 						conn.sendall(str.encode(handle_requests(msg.split()[3:])))
 
 				else:
-					print("login")
 					if msg == prev:
 						conn.sendall(str.encode('debug')) #partir mensagem ao meio e responder duas vezes
 					else:

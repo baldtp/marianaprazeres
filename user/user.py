@@ -14,9 +14,6 @@ args = parser.parse_args()
 HOST = args.n
 PORT = args.p
 
-USER = ''
-PASS = ''
-
 def send(s, msg):
 	totalsent = 0
 	while totalsent < len(msg):
@@ -30,12 +27,9 @@ def request_tcp(req, login):
 	s.connect((HOST, PORT))
 	log = ''
 	if login != 0:
-		print("request")
 		send(s, str.encode(login))
 		log = s.recv(1024).decode()
-		print(log)
 
-	print("1 message sent")
 	send(s, str.encode(req))
 	inc = s.recv(1024).decode()
 	while inc == log:
@@ -45,7 +39,6 @@ def request_tcp(req, login):
 
 def authenticate(log):
 	data = request_tcp(log, 0)
-	print(data)
 	if data == "AUR OK":
 		print("\n\nAuthentication successful: You are now logged in!\n")
 		return True
@@ -62,17 +55,19 @@ def authenticate(log):
 
 def login():
 
+	global USER	
+	global PASS
+
 	log = input('Please enter your login: (example "login 88888 banana12")\n\nCommand: ')
 	l = log.split(" ")
-
-	global USER 
-	USER = l[1]
-	global PASS
-	PASS = l[2]
 
 	if l[0] == 'exit':
 		print('Bye Bye <3')
 		quit()
+
+	
+	USER = l[1]
+	PASS = l[2]	
 
 	if len(l) == 3 and l[0] == 'login' and l[1].isdigit() and len(l[1]) == 5 and l[2].isalnum() and len(l[2]) == 8:
 		if authenticate("AUT " + l[1] + " " + l[2]) == False:
@@ -84,51 +79,99 @@ def login():
 		login()
 	return True
 
-def backup_request(directory):	
-	#Check if directory exists	
+def get_directory(directory):
+
 	cwd = os.getcwd()
-	files = os.listdir(cwd)
-	msg = ' '
+	files = os.listdir(cwd)	
+	
 	if directory in files:
 		dire = cwd + '/' + directory
-		files = os.listdir(dire)
-		msg += str(len(files))
-		for file in files:			
-			size = os.path.getsize(dire + '/' + file)
-			stat = os.stat(dire + '/' + file)			
-			seconds = os.path.getmtime(dire + '/' + file)
-			date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
-			msg += ' ' + file + ' ' + date_time + ' ' + str(size)
-	else:
-		return "nodir"
-	return "BCK " + directory + msg
+		return dire
+	return False
+
+def backup_request(dire):	
+	#Check if directory exists
+	files = os.listdir(dire)
+
+	msg = ' ' + str(len(files))
+
+	for file in files:			
+		size = os.path.getsize(dire + '/' + file)
+		stat = os.stat(dire + '/' + file)			
+		seconds = os.path.getmtime(dire + '/' + file)
+		date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
+		msg += ' ' + file + ' ' + date_time + ' ' + str(size)
+	return msg
 
 
 
 def menu():
-	cmd = input("Please choose one option and type the command:\n\t1 - Request backup of a chosen directory (backup [dir])\n\t\
+	global first
+	global USER	
+	global PASS
+
+	if first:
+		cmd = input("Please choose one option and type the command:\n\t1 - Request backup of a chosen directory (backup [dir])\n\t\
 2 - List the previously stored directories (dirlist)\n\t3 - List files of a directory (filelist [dir])\n\t4 - Retrieve a\
 previously backed up directory (restore [dir])\n\t6 - Delete the backup of a directory (delete [dir])\n\t6 - Delete user (deluser)\n\t7 - Logout (logout)\n\nCommand: ")
+		print('')
+		first = False
+	else:
+		cmd = input("\nCommand: ")
+		print('')
 	
 	cmd = cmd.split(' ')
-	msg = "AUT " + USER + " " + PASS
+	log = "AUT " + USER + " " + PASS
 	if cmd[0] == 'deluser':		
-		print(request_tcp(" DLU", msg))
+		print(request_tcp(" DLU", log))
 	elif cmd[0] == 'backup':
-		print(backup_request(cmd[1]))
-
-
-
-
+		if get_directory(cmd[1]) != False:
+			req = " BCK " + cmd[1] + backup_request(cmd[1])
+			request_tcp(req,log)
+		else:
+			print("Directory doesn't exist: Please try again")
+	elif cmd[0] == 'restore':
+		req = " RST " + cmd[1]
+		if get_directory(cmd[1]) != False:
+			request_tcp(req,log)
+		else:
+			print("Directory doesn't exist: Please try again")
+	elif cmd[0] == 'dirlist':
+		req = " LST"
+		request_tcp(req,log)
+	elif cmd[0] == 'filelist':
+		req = ' LSF ' + cmd[1]
+		if get_directory(cmd[1]) != False:
+			request_tcp(req,log)
+		else:
+			print("Directory doesn't exist: Please try again")
+	elif cmd[0] == 'delete':
+		req = ' DEL ' + cmd[1]
+		if get_directory(cmd[1]) != False:
+			request_tcp(req,log)
+		else:
+			print("Directory doesn't exist: Please try again")
+	elif cmd[0] == 'logout':
+		USER = ''
+		PASS = ''
+		first = True
+		print('\nLogout successful! (Apu voice) Come again <3\n')
+		return False
+	elif cmd[0] == 'exit':
+		print("Bye bye <3")
+		quit()
+	return True
 
 def main(argv):
+	global first
+	first = True
 
-	print("\t WELCOME TO RC'S CLOUD BACKUP SYSTEM\n\n")
+	while 1:
+		print("\t WELCOME TO RC'S CLOUD BACKUP SYSTEM\n\n")
 
-	if login():
-		print(USER)
-		print(PASS)
-		menu()
+		if login():
+			while menu():
+				continue
 
 if __name__ == "__main__":
     main(sys.argv[1:])
