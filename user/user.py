@@ -46,7 +46,7 @@ def authenticate(log):
 		print("\n\nWrong password: Please try again")
 		return False
 	elif data == "AUR NEW":
-		print("\n\nYour account was created successfully: You are now logged in!\n")
+		print('\n\nUser "' + log.split(' ')[1] + '" created: You are now logged in!\n')
 		return True
 		
 	print('Unexpected return: ' + data)
@@ -89,21 +89,49 @@ def get_directory(directory):
 		return dire
 	return False
 
-def backup_request(dire):	
-	#Check if directory exists
-	files = os.listdir(dire)
+def backup_request(dire, log):
 
-	msg = ' ' + str(len(files))
+	if get_directory(dire) != False:
+		files = os.listdir(dire)
+		msg = ' ' + str(len(files))
 
-	for file in files:			
-		size = os.path.getsize(dire + '/' + file)
-		stat = os.stat(dire + '/' + file)			
-		seconds = os.path.getmtime(dire + '/' + file)
-		date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
-		msg += ' ' + file + ' ' + date_time + ' ' + str(size)
-	return msg
+		for file in files:			
+			size = os.path.getsize(dire + '/' + file)
+			stat = os.stat(dire + '/' + file)			
+			seconds = os.path.getmtime(dire + '/' + file)
+			date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
+			msg += ' ' + file + ' ' + date_time + ' ' + str(size)
 
 
+		req = " BCK " + dire + msg
+		reply = 'BKR 192.168.128.2 58001 2 r1.c 19.09.2018 08:45:01 50 r2.c 19.09.2018 09:03:13 70'.split(' ')#request_tcp(req,log).split(' ') #descomentar e apagar a mensagem para comunicacao
+		pop = ''
+		if reply[0] == 'BKR':
+			pop = 'backup to: ' + reply[1] + ' ' + reply[2] + ' completed - ' + dire + ':'
+			for x in range(int(reply[3])):
+				pop += (' ' + reply[4 * (x+1)])
+	
+			print(pop)
+	else:
+		print("Directory doesn't exist: Please try again")
+
+
+	
+
+
+def list_request(log):
+	req = " LST"
+	reply = 'LDR 1 RC'.split(" ") #request_tcp(req,log).split(' ')  #descomentar e apagar a mensagem para comunicacao
+	if reply[0] == 'LDR' and int(reply[1]) > 0:
+		msg = ''
+		for x in range(int(reply[1])):
+			msg += reply[x + 2]
+
+		print(msg)
+	elif reply[1] == '0':
+		print('\nThe backup is empty')
+	else:
+		print('Error')
 
 def menu():
 	global first
@@ -125,20 +153,17 @@ previously backed up directory (restore [dir])\n\t6 - Delete the backup of a dir
 	if cmd[0] == 'deluser':		
 		print(request_tcp(" DLU", log))
 	elif cmd[0] == 'backup':
-		if get_directory(cmd[1]) != False:
-			req = " BCK " + cmd[1] + backup_request(cmd[1])
-			request_tcp(req,log)
-		else:
-			print("Directory doesn't exist: Please try again")
+		backup_request(cmd[1], log)
 	elif cmd[0] == 'restore':
 		req = " RST " + cmd[1]
 		if get_directory(cmd[1]) != False:
 			request_tcp(req,log)
 		else:
 			print("Directory doesn't exist: Please try again")
-	elif cmd[0] == 'dirlist':
-		req = " LST"
-		request_tcp(req,log)
+
+	elif cmd[0] == 'dirlist':		
+		list_request(log)
+
 	elif cmd[0] == 'filelist':
 		req = ' LSF ' + cmd[1]
 		if get_directory(cmd[1]) != False:
