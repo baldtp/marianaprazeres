@@ -29,7 +29,7 @@ def get_user_backup(name):
 
 	return backup
 
-def get_backup_address(backup):	
+def get_backup_address(backup):
 	file = open("backuplist.txt", "r")
 	for line in file.readlines():
 		if backup == line[0]:
@@ -68,7 +68,7 @@ def login(log):
                 else:
                     file.close()
                     return "AUR NOK"
-            
+
         file.write('\n' + user + "," + pw + "," + avai_bs())
         file.close()
         return "AUR NEW"
@@ -84,37 +84,39 @@ def bs_register():
     except OSError:
         exit("Could not create a child process")
     if pid == 0:
-    	backup_counter = 0
-    	while 1:
-        	msg = udp_receive()
-        	if msg[0] == 'REG':
-        		try:
-        			backup_counter += 1
-        			if os.path.isfile("backuplist.txt") == False:
-        				file = open("backuplist.txt", "w+")
-        				file.close()
-        			file = open("backuplist.txt", "r+")
-        			file.write(str(backup_counter) + ',0,' + msg[1] + ',' + msg[2])
-        			file.close()
-        			udp_send(msg[1], int(msg[2]), 'RGR OK')
-        		except ValueError:
-        			udp_send(msg[1], int(msg[2]), 'RGR ERR')
-        	elif msg[0] == 'UNR':
-	        	try:
-	        		backup_counter -= 1
-        			if os.path.isfile("backuplist.txt") == False:
-        				file = open("backuplist.txt", "w+")
-        				file.close()
-        			f = open("backuplist.txt", "r+")
-        			new_f = f.readlines()
-        			f.seek(0)
-        			for line in new_f:
-        				if msg[2] not in line:	
-        					f.write(line)
-        			f.truncate()
-	        		udp_send(msg[1], int(msg[2]), 'UAR OK')
-		        except ValueError:
-		        	udp_send(msg[1], int(msg[2]), 'UAR ERR')
+        backup_counter = 0
+        while 1:
+			msg = udp_receive()
+			if msg[0] == 'REG':
+				try:
+					backup_counter += 1
+					if os.path.isfile("backuplist.txt") == False:
+						file = open("backuplist.txt", "w+")
+						file.close()
+					file = open("backuplist.txt", "r+")
+					file.write(str(backup_counter) + ',0,' + msg[1] + ',' + msg[2])
+					file.close()
+					udp_send(msg[1], int(msg[2]), 'RGR OK')
+				except ValueError:
+					udp_send(msg[1], int(msg[2]), 'RGR ERR')
+			elif msg[0] == 'UNR':
+				try:
+					backup_counter -= 1
+					if os.path.isfile("backuplist.txt") == False:
+						file = open("backuplist.txt", "w+")
+						file.close()
+					f = open("backuplist.txt", "r+")
+					new_f = f.readlines()
+					f.seek(0)
+					for line in new_f:
+						if msg[2] not in line:
+							f.write(line)
+					f.truncate()
+					udp_send(msg[1], int(msg[2]), 'UAR OK')
+				except ValueError:
+					udp_send(msg[1], int(msg[2]), 'UAR ERR')
+	except OSError:
+					exit("Could not create a child process")
 
 def handle_requests(msg):
 	global USER
@@ -141,11 +143,39 @@ def handle_requests(msg):
 					msg = 'DLR OK'
 			else:
 				print('escreveu')
-				file.write(line)	
-		file.truncate()			
+				file.write(line)
+		file.truncate()
 		file.close()
 		print(msg)
 		return msg
+	elif msg[0] == 'BCK':
+		print(msg)
+		fich = msg[2:]
+		fich1 = ' '.join(fich)
+		print(fich1)
+		dire = msg[1]
+		file_us = open("userlist.txt", "r+")
+		f_us = file_us.readlines()
+		file_us.seek(0)
+		file_bs = open("backuplist.txt", "r+")
+		f_bs = file_bs.readlines()
+		file_bs.seek(0)
+		for line1 in f_us:
+			line1 = line1.split(',')
+			if dire in line1[3]:
+				bs = line1[2]
+				for line2 in f_bs:
+					line2 = line2.strip('\n')
+					line2 = line2.split(',')
+					if bs == line2[0]:
+						ip = line2[2]
+						porto = line2[3]
+						#ter de ir aos ficheiros ver os nomes e as propriedades
+						msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
+						print(msg_ret)
+		file_bs.close()
+		file_us.close()
+		return msg_ret
 
 	return "hello"
 
@@ -196,10 +226,9 @@ def tcp_requests():
 
 
 
-#bs_register()
+bs_register()
 tcp_requests()
 
 while 1:
 	time.sleep(5)
 	print("running")
-

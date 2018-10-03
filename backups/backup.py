@@ -16,7 +16,8 @@ bsport = 59000
 csport = 58069
 csname = socket.gethostname()
 s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
+s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+my_ip_address = socket.gethostbyname(socket.gethostname())
 
 def udp_send(msg):
     s_udp.settimeout(5)
@@ -25,14 +26,24 @@ def udp_send(msg):
 
 
 def udp_receive():
-    data, addr = s_udp.recvfrom(30)
-    msg = data.decode()
+    data = s_udp.recvfrom(30)
+    msg = data[0].decode()
     return msg
 
 
+def tcp_send(s, msg):
+    totalsent = 0
+    while totalsent < len(msg):
+        sent = s.send(msg[totalsent:])
+        if sent == 0:
+            raise RuntimeError("socket connection broken")
+        totalsent = totalsent + sent
+
+
+# terminar pograma
 def ctrlc_handler():
     try:
-        udp_send("UNR " + csname + " " + str(bsport) + "\n")
+        udp_send("UNR " + my_ip_address + " " + str(bsport) + "\n")
         msg = udp_receive()
         if msg == 'UAR OK\n':
             print(msg)
@@ -56,8 +67,6 @@ signal.signal(signal.SIGINT, ctrlc_handler())
 
 # main
 def main():
-    global s_tcp
-    s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', default=59000)  # BSport
     parser.add_argument('-n', default=socket.gethostname())  # CSname
@@ -89,7 +98,7 @@ def main():
 # registo no cs
 def register():
     try:
-        udp_send("REG " + csname + " " + str(bsport) + "\n")
+        udp_send("REG " + my_ip_address + " " + str(bsport) + "\n")
         msg = udp_receive()
         if msg == 'RGR OK\n':
             print(msg)
@@ -155,18 +164,16 @@ def listen_tcp():
             split_msg = msg.split()
 
             if split_msg[0] == 'AUT':
-                conn.send(str.encode("AUR " + aut(split_msg[1], split_msg[2]) + "\n"))
+                tcp_send(conn, str.encode("AUR " + aut(split_msg[1], split_msg[2]) + "\n"))
 
             elif split_msg[0] == 'UPL':
-                conn.send(str.encode("UPR " + up_files(split_msg[1], split_msg[2]) + "\n"))
+                tcp_send(conn, str.encode("UPR " + up_files(split_msg[1], split_msg[2]) + "\n"))
 
             elif split_msg[0] == 'RSB':
-                conn.send(str.encode("RBR " + down_files(split_msg[1]) + "\n"))
+                tcp_send(conn, str.encode("RBR " + down_files(split_msg[1]) + "\n"))
             else:
-                conn.send(str.encode('ERR\n'))
+                tcp_send(conn, str.encode('ERR\n'))
             conn.close()
-        except ValueError:
-            conn.send(str.encode('ERR\n'))
         except OSError:
             print('Error: a connection could not be made.\n')
 
@@ -184,6 +191,42 @@ def up_files(dir, nr):
 def down_files(dir):
     return ''
     #todo
+
+
+def get_directory(directory):
+    cwd = os.getcwd()
+    files = os.listdir(cwd)
+
+    if directory in files:
+        dire = cwd + '/' + directory
+        return dire
+    return False
+
+
+def backup_request(dire, log):
+    if get_directory(dire) != False:
+        files = os.listdir(dire)
+        msg = ' ' + str(len(files))
+
+        for file in files:
+            size = os.path.getsize(dire + '/' + file)
+            stat = os.stat(dire + '/' + file)
+            seconds = os.path.getmtime(dire + '/' + file)
+            date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
+            msg += ' ' + file + ' ' + date_time + ' ' + str(size)
+
+        req = " BCK " + dire + msg
+        reply = 'BKR 192.168.128.2 58001 2 r1.c 19.09.2018 08:45:01 50 r2.c 19.09.2018 09:03:13 70'.split(
+            ' ')  # request_tcp(req,log).split(' ') #descomentar e apagar a mensagem para comunicacao
+        pop = ''
+        if reply[0] == 'BKR':
+            pop = 'backup to: ' + reply[1] + ' ' + reply[2] + ' completed - ' + dire + ':'
+            for x in range(int(reply[3])):
+                pop += (' ' + reply[4 * (x + 1)])
+
+            print(pop)
+    else:
+        print("Directory doesn't exist: Please try again")
 
 
 def exit_abnormally():
