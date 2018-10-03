@@ -4,7 +4,7 @@ import socket
 import argparse
 import sys
 import os
-import time
+import datetime
 
 #iniciar programa - flags
 parser = argparse.ArgumentParser()
@@ -88,19 +88,20 @@ def backup_request(directory):
 	#Check if directory exists	
 	cwd = os.getcwd()
 	files = os.listdir(cwd)
+	msg = ' '
 	if directory in files:
 		dire = cwd + '/' + directory
 		files = os.listdir(dire)
-		msg = str(len(files))
-		print(dire)
+		msg += str(len(files))
 		for file in files:			
 			size = os.path.getsize(dire + '/' + file)
-			stat = os.stat(dire)
-			date = stat.st_mtime
-			print(date)
-			#msg += ' ' + file + ' ' + date + ' ' + size
+			stat = os.stat(dire + '/' + file)			
+			seconds = os.path.getmtime(dire + '/' + file)
+			date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
+			msg += ' ' + file + ' ' + date_time + ' ' + str(size)
 	else:
 		return "nodir"
+	return "BCK " + directory + msg
 
 
 
@@ -114,7 +115,7 @@ previously backed up directory (restore [dir])\n\t6 - Delete the backup of a dir
 	if cmd[0] == 'deluser':		
 		print(request_tcp(" DLU", msg))
 	elif cmd[0] == 'backup':
-		backup_request(cmd[1])
+		print(backup_request(cmd[1]))
 
 
 
