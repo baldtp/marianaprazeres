@@ -115,10 +115,6 @@ def backup_request(dire, log):
 	else:
 		print("Directory doesn't exist: Please try again")
 
-
-	
-
-
 def list_request(log):
 	req = " LST"
 	reply = 'LDR 1 RC'.split(" ") #request_tcp(req,log).split(' ')  #descomentar e apagar a mensagem para comunicacao
