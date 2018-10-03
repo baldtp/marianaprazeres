@@ -3,6 +3,8 @@
 import socket
 import argparse
 import sys
+import os
+import time
 
 #iniciar programa - flags
 parser = argparse.ArgumentParser()
@@ -23,7 +25,6 @@ def send(s, msg):
 			raise RuntimeError("socket connection broken")
 		totalsent = totalsent + sent
 
-
 def request_tcp(req, login):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((HOST, PORT))
@@ -41,8 +42,6 @@ def request_tcp(req, login):
 		inc = s.recv(1024).decode()
 	s.close()
 	return inc
-
-
 
 def authenticate(log):
 	data = request_tcp(log, 0)
@@ -85,15 +84,39 @@ def login():
 		login()
 	return True
 
+def backup_request(directory):	
+	#Check if directory exists	
+	cwd = os.getcwd()
+	files = os.listdir(cwd)
+	if directory in files:
+		dire = cwd + '/' + directory
+		files = os.listdir(dire)
+		msg = str(len(files))
+		print(dire)
+		for file in files:			
+			size = os.path.getsize(dire + '/' + file)
+			stat = os.stat(dire)
+			date = stat.st_mtime
+			print(date)
+			#msg += ' ' + file + ' ' + date + ' ' + size
+	else:
+		return "nodir"
+
+
+
 def menu():
 	cmd = input("Please choose one option and type the command:\n\t1 - Request backup of a chosen directory (backup [dir])\n\t\
 2 - List the previously stored directories (dirlist)\n\t3 - List files of a directory (filelist [dir])\n\t4 - Retrieve a\
 previously backed up directory (restore [dir])\n\t6 - Delete the backup of a directory (delete [dir])\n\t6 - Delete user (deluser)\n\t7 - Logout (logout)\n\nCommand: ")
 	
-
-	if cmd == 'deluser':
-		msg = "AUT " + USER + " " + PASS
+	cmd = cmd.split(' ')
+	msg = "AUT " + USER + " " + PASS
+	if cmd[0] == 'deluser':		
 		print(request_tcp(" DLU", msg))
+	elif cmd[0] == 'backup':
+		backup_request(cmd[1])
+
+
 
 
 

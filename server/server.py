@@ -137,7 +137,8 @@ def handle_requests(msg):
 					print('escreveu')
 					file.write(line)
 					msg = 'DLR NOK'
-				msg = 'DLR OK'
+				else:
+					msg = 'DLR OK'
 			else:
 				print('escreveu')
 				file.write(line)	
