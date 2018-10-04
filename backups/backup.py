@@ -19,6 +19,7 @@ s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 my_ip_address = socket.gethostbyname(socket.gethostname())
 
+
 def udp_send(msg):
     s_udp.settimeout(5)
     s_udp.sendto(str.encode(msg), (csname, csport))
@@ -62,7 +63,7 @@ def ctrlc_handler():
         exit_abnormally()
 
 
-signal.signal(signal.SIGINT, ctrlc_handler())
+signal.signal(signal.SIGINT, ctrlc_handler)
 
 
 # main
