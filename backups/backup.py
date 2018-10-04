@@ -10,6 +10,7 @@ import argparse
 import signal
 import socket
 import sys
+import time
 
 
 bsport = 59000
@@ -204,30 +205,30 @@ def get_directory(directory):
     return False
 
 
-def backup_request(dire, log):
-    if get_directory(dire) != False:
-        files = os.listdir(dire)
-        msg = ' ' + str(len(files))
-
-        for file in files:
-            size = os.path.getsize(dire + '/' + file)
-            stat = os.stat(dire + '/' + file)
-            seconds = os.path.getmtime(dire + '/' + file)
-            date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
-            msg += ' ' + file + ' ' + date_time + ' ' + str(size)
-
-        req = " BCK " + dire + msg
-        reply = 'BKR 192.168.128.2 58001 2 r1.c 19.09.2018 08:45:01 50 r2.c 19.09.2018 09:03:13 70'.split(
-            ' ')  # request_tcp(req,log).split(' ') #descomentar e apagar a mensagem para comunicacao
-        pop = ''
-        if reply[0] == 'BKR':
-            pop = 'backup to: ' + reply[1] + ' ' + reply[2] + ' completed - ' + dire + ':'
-            for x in range(int(reply[3])):
-                pop += (' ' + reply[4 * (x + 1)])
-
-            print(pop)
-    else:
-        print("Directory doesn't exist: Please try again")
+# def backup_request(dire, log):
+#     if get_directory(dire) != False:
+#         files = os.listdir(dire)
+#         msg = ' ' + str(len(files))
+#
+#         for file in files:
+#             size = os.path.getsize(dire + '/' + file)
+#             stat = os.stat(dire + '/' + file)
+#             seconds = os.path.getmtime(dire + '/' + file)
+#             date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
+#             msg += ' ' + file + ' ' + date_time + ' ' + str(size)
+#
+#         req = " BCK " + dire + msg
+#         reply = 'BKR 192.168.128.2 58001 2 r1.c 19.09.2018 08:45:01 50 r2.c 19.09.2018 09:03:13 70'.split(
+#             ' ')  # request_tcp(req,log).split(' ') #descomentar e apagar a mensagem para comunicacao
+#         pop = ''
+#         if reply[0] == 'BKR':
+#             pop = 'backup to: ' + reply[1] + ' ' + reply[2] + ' completed - ' + dire + ':'
+#             for x in range(int(reply[3])):
+#                 pop += (' ' + reply[4 * (x + 1)])
+#
+#             print(pop)
+#     else:
+#         print("Directory doesn't exist: Please try again")
 
 
 def exit_abnormally():
