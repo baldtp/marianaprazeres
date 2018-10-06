@@ -11,21 +11,25 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-n', default = "localhost") #CSname
 parser.add_argument('-p', default = 58068) #CSport
 args = parser.parse_args()
-global HOST
+#global HOST
 HOST = args.n
-global PORT
+#global PORT
 PORT = args.p
 
-def cs_to_bs():
+def cs_to_bs(h, p):
+	global HOST
+	global PORT
 	prevh = HOST
-	prevp = PORT			
-	HOST = reply[1]
-	PORT = reply[2]
+	prevp = int(PORT)		
+	HOST = h
+	PORT = int(p)
 	return (prevh, prevp)
 
 def bs_to_cs(prevh, prevp):
+	global HOST
+	global PORT
 	HOST = prevh
-	PORT = prevp
+	PORT = int(prevp)
 
 def send(s, msg):
 	totalsent = 0
@@ -135,7 +139,7 @@ def backup_request(dire, log):
 			
 
 
-			cs = cs_to_bs()
+			cs = cs_to_bs(reply[1], reply[2])
 			#tcp_request(bs_req, log)
 			print(bs_req)
 			bs_to_cs(cs[0], cs[1])
@@ -164,10 +168,11 @@ def restore_request(dire, log):
 
 	req = " RST " + dire
 	if get_directory(dire) != False:
-		reply = 'RSR 192.168.128.2 58001'.split(' ') #tcp_receive(req,log).split(' ')
+		reply = 'RSR 192.168.128.2 59000'.split(' ') #tcp_receive(req,log).split(' ')
 		if reply[0] == 'RSR':
-			cs = cs_to_bs()
-			bs_req = 'RBR 2 r1.c 19.09.2018 08:45:01 50 data1\nr2.c 19.09.2018 09:03:13 70 data2' #tcp_receive('RSB ' + dire)
+			cs = cs_to_bs(reply[1], reply[2])
+			bs_req = tcp_receive('RSB ' + dire, log) #'RBR 2 r1.c 19.09.2018 08:45:01 50 data1\nr2.c 19.09.2018 09:03:13 70 data2'
+			print(bs_req)
 
 			#falta por os ficheiros de volta no diretorio, checkar se o repositorio existe etc
 

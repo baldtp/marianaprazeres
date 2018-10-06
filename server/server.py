@@ -13,10 +13,6 @@ args = parser.parse_args()
 PORT = args.p
 HOST = "localhost"
 
-# Recebe um tuplo de dois elementos com um username e uma password e se o login existir, devolve o username e o numero do seu backup
-def avai_bs():
-    return "1"
-
 def get_user_backup(name):
     backup = ''
 
@@ -71,14 +67,41 @@ def login(log):
                     file.close()
                     return "AUR NOK"
 
-        file.write('\n' + user + "," + pw + "," + avai_bs())
-        file.close()
-        return "AUR NEW"
+        if os.path.isfile("backuplist.txt") is False:
+        	print('No available backup')
+        	return "AUR NOK"
+        	f = open('backuplist.txt', 'r')
+        	f = f.readlines()
+        	for bs in f:
+        		bs = bs.split(',')
+        		msg = 'LSU ' + user + ' ' + pw
+        		udp_send(bs[2], bs[3], msg)
+        		if udp_receive() == 'LUR OK':
+        			file.write(user + "," + pw + "," + bs[0])
+        			file.close()
+        			return "AUR NEW"
+        print('Error from backup')
+        return "AUR NOK"
     else:
-        print('ola')
-        file.write(user + "," + pw + "," + avai_bs())
-        file.close()
-        return "AUR NEW"
+    	if os.path.isfile("backuplist.txt") is False:
+    		print('No available backup')
+    		return "AUR NOK"
+    	else:
+	    	f = open('backuplist.txt', 'r')
+	    	f = f.readlines()
+	    	for bs in f:
+		    	bs = bs.split(',')
+		    	msg = 'LSU ' + user + ' ' + pw
+		    	udp_send(bs[2], bs[3], msg)
+		    	if udp_receive() == 'LUR OK':
+		    		file.write(user + "," + pw + "," + bs[0])
+		    		file.close()
+		    		return "AUR NEW"
+	    		else:
+	    			continue
+
+	    	print('Error from backup')
+	    	return "AUR NOK"
 
 def bs_register():
     try:
@@ -148,6 +171,7 @@ def handle_requests(msg):
         file.close()
         print(msg)
         return msg
+   
     elif msg[0] == 'BCK':
         msg_ret = ''
         print(msg)
@@ -174,12 +198,44 @@ def handle_requests(msg):
                         #ter de ir aos ficheiros ver os nomes e as propriedades
                         msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
                         print(msg_ret)
+
         file_bs.close()
         file_us.close()
         return msg_ret
 
-    return "hello"
+    elif msg[0] == 'LSF':
 
+    	#abrir ficheiro e procurar backup do user
+    	f = open('userlist.txt', 'r')
+    	f = f.readlines()
+    	backup = ''
+    	for line in f:
+    		l = line.split('')
+    		if l[0] == USER:
+    			backup = l[2]
+    	f.close()
+
+    	#abrir ficheiro e procurar ip e port do bs
+    	f = open('backuplist.txt', 'r')
+    	f = f.readlines()
+    	h = ''
+    	p = ''
+    	for line in f:
+    		l = line.split('')
+    		if l[0] == backup:
+    			h = l[2]
+    			p = l[3]
+
+    	#enviar mensagem ao bs
+    	msg = 'LSF ' + USER + ' ' + msg[1]
+    	udp_send(h, p, msg)
+    	reply = udp_receive()
+
+    	#devolver ao user
+    	if reply.split(' ')[0] == 'LFD':
+    		return 'LFD ' + h + ' ' + p + ' ' + reply[4:]
+    
+    return "hello"
 
 def tcp_requests():
     try:
@@ -222,10 +278,6 @@ def tcp_requests():
                         break
     except OSError:
         exit("Could not create a child process")
-
-
-
-
 
 bs_register()
 tcp_requests()
