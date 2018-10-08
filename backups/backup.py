@@ -43,7 +43,7 @@ def tcp_send(s, msg):
 
 
 # terminar pograma
-def ctrlc_handler():
+def ctrlc_handler(signum, frame):
     try:
         udp_send("UNR " + my_ip_address + " " + str(bsport) + "\n")
         msg = udp_receive()
