@@ -195,12 +195,15 @@ def handle_requests(msg):
                     if bs == line2[0]:
                         ip = line2[2]
                         porto = line2[3]
-                        #ter de ir aos ficheiros ver os nomes e as propriedades
                         msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
+                        #se o user nao esta registado no bs o cs troca LSU-LUR com bs e retorna lista de todos os ficheiros
+                        # se estiver registado o cs troca LSF-LFD com bs e para receber a lista de ficheiros modificados
                         print(msg_ret)
-
+        if msg_ret == '':
+            	msg_ret = 'BKR EOF'
         file_bs.close()
         file_us.close()
+        # como ver se esta bem formulado
         return msg_ret
 
     elif msg[0] == 'LSF':
@@ -234,8 +237,39 @@ def handle_requests(msg):
     	#devolver ao user
     	if reply.split(' ')[0] == 'LFD':
     		return 'LFD ' + h + ' ' + p + ' ' + reply[4:]
-    
+
+
+
+    elif msg[0] == 'RST':
+        msg_ret = ''
+        dire = msg[1]
+        file_us = open("userlist.txt", "r+")
+        f_us = file_us.readlines()
+        file_us.seek(0)
+        file_bs = open("backuplist.txt", "r+")
+        f_bs = file_bs.readlines()
+        file_bs.seek(0)
+        for line1 in f_us:
+            line1 = line1.split(',')
+            if dire in line1[3]:
+                bs = line1[2]
+                for line2 in f_bs:
+                    line2 = line2.strip('\n')
+                    line2 = line2.split(',')
+                    if bs == line2[0]:
+                        ip = line2[2]
+                        porto = line2[3]
+                        msg_ret = 'RSR ' + ip + ' ' + port
+                        print(msg_ret)
+        if msg_ret == '' :
+        	msg_ret = 'RSR EOF'
+        file_bs.close()
+        file_us.close()
+        # como ver se esta bem formulado
+        return msg_ret
     return "hello"
+
+
 
 def tcp_requests():
     try:
