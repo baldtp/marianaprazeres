@@ -5,16 +5,17 @@
 #   83554   Rafael Pereira
 #   8xxxx   Joao Afonso
 
+
 import os
 import argparse
 import signal
 import socket
 import sys
-import time
+import select
 
 
 bsport = 59000
-csport = 58069
+csport = 58066
 csname = socket.gethostname()
 s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,7 +24,7 @@ my_ip_address = socket.gethostbyname(socket.gethostname())
 
 def udp_send(msg):
     s_udp.settimeout(5)
-    s_udp.sendto(str.encode(msg), (csname, csport))
+    s_udp.sendto(str.encode(msg), (csname, int(csport)))
     s_udp.settimeout(None)
 
 
@@ -72,7 +73,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', default=59000)  # BSport
     parser.add_argument('-n', default=socket.gethostname())  # CSname
-    parser.add_argument('-p', default=58069)  # CSport
+    parser.add_argument('-p', default=58011)  # CSport
     args = parser.parse_args()
     global bsport
     global csname
@@ -80,21 +81,23 @@ def main():
     bsport = args.b
     csname = args.n
     csport = args.p
+
     register()
-    try:
-        pid = os.fork()
-        if pid == 0:
-            try:
-                s_tcp.bind((socket.gethostname(), bsport))
-                s_tcp.listen(True)
-            except OSError:
-                print('Error: could not make a connection, address/port already in use.\n')
-            listen_tcp()
-        else:
-            s_udp.bind((socket.gethostname(), bsport))
-            listen_udp()
-    except OSError:
-        exit("Could not create a child process.\n")
+
+    s_udp.bind((my_ip_address, bsport))
+    s_tcp.bind((my_ip_address, bsport))
+    s_tcp.listen(1)
+
+    input_aux = [s_udp, s_tcp]
+    while True:
+        inputready, outputready, exceptready = select.select(input_aux, [], [])
+        for s in inputready:
+            if s == s_udp:
+                read_udp()
+            elif s == s_tcp:
+                read_tcp()
+            else:
+                print("unknow socket")
 
 
 # registo no cs
@@ -119,9 +122,10 @@ def register():
 
 
 # servidor fica a espera de pedidos udp
-def listen_udp():
+def read_udp():
     try:
-        while True:
+        pid = os.fork()
+        if pid == 0:
             msg = udp_receive()
             split_msg = msg.split()
 
@@ -137,6 +141,7 @@ def listen_udp():
             else:
                 udp_send("ERR\n")
                 exit_abnormally()
+            exit_normally()
     except socket.timeout:
         s_udp.settimeout(None)
         print('Error: connection to the CS timed out.\n')
@@ -158,10 +163,11 @@ def del_dir(user, dir):
 
 
 # servidor fica a espera de pedidos tcp
-def listen_tcp():
-    while True:
-        try:
-            conn, addr = s_tcp.accept()
+def read_tcp():
+    try:
+        conn, addr = s_tcp.accept()
+        pid = os.fork()
+        if pid == 0:
             msg = conn.recv(30).decode()
             split_msg = msg.split()
 
@@ -176,8 +182,11 @@ def listen_tcp():
             else:
                 tcp_send(conn, str.encode('ERR\n'))
             conn.close()
-        except OSError:
-            print('Error: a connection could not be made.\n')
+            exit_normally()
+        else:
+            conn.close()
+    except OSError:
+        print('Error: a connection could not be made.\n')
 
 
 def aut(user, pw):
@@ -195,14 +204,14 @@ def down_files(dir):
     #todo
 
 
-def get_directory(directory):
-    cwd = os.getcwd()
-    files = os.listdir(cwd)
-
-    if directory in files:
-        dire = cwd + '/' + directory
-        return dire
-    return False
+# def get_directory(directory):
+#     cwd = os.getcwd()
+#     files = os.listdir(cwd)
+#
+#     if directory in files:
+#         dire = cwd + '/' + directory
+#         return dire
+#     return False
 
 
 # def backup_request(dire, log):
