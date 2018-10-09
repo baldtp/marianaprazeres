@@ -130,7 +130,7 @@ def backup_request(dire, log):
 
 		req = " BCK " + dire + msg
 		bs_req = ' UPL ' + dire + msg2
-		reply = 'BKR 192.168.128.2 58001 2 r1.c 19.09.2018 08:45:01 50 r2.c 19.09.2018 09:03:13 70'.split(' ')#tcp_receive(req,log).split(' ') #descomentar e apagar a mensagem para comunicacao
+		reply =tcp_receive(req,log).split(' ') #descomentar e apagar a mensagem para comunicacao
 		pop = ''
 		if reply[0] == 'BKR':
 			pop = 'backup to: ' + reply[1] + ' ' + reply[2] + ' completed - ' + dire + ':'
