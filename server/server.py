@@ -236,24 +236,29 @@ def handle_requests(msg):
         # como ver se esta bem formulado
         return msg_ret
 
-    # # diretorias do user(qual user)
-    # elif msg[0] == 'LSD' :
-    # 	counter = 0
-    # 	msg_ret = ''
+    # diretorias guardadas pelo user
+    elif msg[0] == 'LSD' :
+    	counter = 0
+    	msg_ret = ''
 
-
-
-    # 	msg_ret = 'LDR ' + counter
-
-    	
-    # 	return msg_ret
+    	f = open('userlist.txt', 'r')
+    	f = f.readlines
+    	backup = ''
+    	for line in f:
+    		l = line.split('')
+    		if l[0] == USER:
+    			counter = counter +1
+    			backup = backup + ' ' + l[2]
+    	f.close()
+    	msg_ret = 'LDR ' + counter + backup
+    	return msg_ret
 
     elif msg[0] == 'LSF':
 
     	#abrir ficheiro e procurar backup do user
     	f = open('userlist.txt', 'r')
     	f = f.readlines
-    	    	backup = ''
+    	backup = ''
     	for line in f:
     		l = line.split('')
     		if l[0] == USER:
@@ -281,27 +286,36 @@ def handle_requests(msg):
     		return 'LFD ' + h + ' ' + p + ' ' + reply[4:]
 
 
-    # elif msg[0] == 'DEL':
-    # 	dire = msg[1]
-    # 	file_us = open("userlist.txt", "r+")
-    #     f_us = file_us.readlines()
-    #     file_bs.seek(0)
-    #     for line in f_us:
-    #         line = line.split(',')
-    #         if dire in line1[3]:
-    #         	#eliminar essa linha
+    elif msg[0] == 'DEL':
+    	#abrir ficheiro e procurar backup do user
+    	f = open('userlist.txt', 'r')
+    	f = f.readlines
+    	backup = ''
+    	for line in f:
+    		l = line.split('')
+    		if l[0] == USER:
+    			backup = l[2]
+    	f.close()
 
-
-
-
+    	#abrir ficheiro e procurar ip e port do bs
+    	f = open('backuplist.txt', 'r')
+    	f = f.readlines()
+    	h = ''
+    	p = ''
+    	for line in f:
+    		l = line.split('')
+    		if l[0] == backup:
+    			h = l[2]
+    			p = l[3]
+    	dire = msg[1]
+    	msg_bs = 'DLB '+ USER + ' ' + dire
+    	udp_send( h, p,msg_bs)
+    	reply = udp_receive()
 
     # 	#se for bem apagado
     # 	return 'DDR OK'
     # 	#se nao for bem apagado
     # 	return 'DDR NOK'
-
-    
-
     return "hello"
 
 
