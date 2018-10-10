@@ -8,7 +8,7 @@ import argparse
 
 #iniciar programa - flags
 parser = argparse.ArgumentParser()
-parser.add_argument('-p', default = 58068) #CSport
+parser.add_argument('-p', default = 58066) #CSport
 args = parser.parse_args()
 PORT = args.p
 HOST = "localhost"
@@ -45,7 +45,7 @@ def udp_receive():
 
 def udp_send(name, port, msg):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.sendto(str.encode(msg), name, port)
+    s.sendto(str.encode(msg), (name, int(port)))
     s.close()
 
 
@@ -116,19 +116,21 @@ def bs_register():
                         if os.path.isfile("backuplist.txt") == False:
                             file = open("backuplist.txt", "w+")
                             file.close()
-                        file = open("backuplist.txt", "r+")
+                        file = open("backuplist.txt", "a")
                         file.write(str(backup_counter) + ',0,' + msg[1] + ',' + msg[2])
                         file.close()
+                        print('New backup registed: ' + str(backup_counter))
                         udp_send(msg[1], int(msg[2]), 'RGR OK')
                     except ValueError:
                         udp_send(msg[1], int(msg[2]), 'RGR ERR')
                 elif msg[0] == 'UNR':
+                	print('Pedido UNR')
                     try:
                         backup_counter -= 1
                         if os.path.isfile("backuplist.txt") == False:
                             file = open("backuplist.txt", "w+")
                             file.close()
-                        f = open("backuplist.txt", "r+")
+                        f = open("backuplist.txt", "w")
                         new_f = f.readlines()
                         f.seek(0)
                         for line in new_f:

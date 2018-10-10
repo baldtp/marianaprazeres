@@ -13,19 +13,13 @@ import socket
 import sys
 import select
 
-
-bsport = 59000
-csport = 58066
-csname = socket.gethostname()
 s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 my_ip_address = socket.gethostbyname(socket.gethostname())
 
 
 def udp_send(msg):
-    s_udp.settimeout(5)
     s_udp.sendto(str.encode(msg), (csname, int(csport)))
-    s_udp.settimeout(None)
 
 
 def udp_receive():
@@ -47,7 +41,9 @@ def tcp_send(s, msg):
 def ctrlc_handler(signum, frame):
     try:
         udp_send("UNR " + my_ip_address + " " + str(bsport) + "\n")
+        s_udp.settimeout(5)
         msg = udp_receive()
+        s_udp.settimeout(None)
         if msg == 'UAR OK\n':
             print(msg)
             exit_normally()
@@ -72,8 +68,8 @@ signal.signal(signal.SIGINT, ctrlc_handler)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', default=59000)  # BSport
-    parser.add_argument('-n', default=socket.gethostname())  # CSname
-    parser.add_argument('-p', default=58011)  # CSport
+    parser.add_argument('-n', default='localhost')  # CSname
+    parser.add_argument('-p', default=58066)  # CSport
     args = parser.parse_args()
     global bsport
     global csname
@@ -195,7 +191,7 @@ def aut(user, pw):
 
 
 def up_files(dir, nr):
-    return ''
+    return 'OK'
     # todo
 
 

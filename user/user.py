@@ -140,7 +140,7 @@ def backup_request(dire, log):
 
 
 			cs = cs_to_bs(reply[1], reply[2])
-			#tcp_request(bs_req, log)
+			print(tcp_request(bs_req, log))
 			print(bs_req)
 			bs_to_cs(cs[0], cs[1])
 			
