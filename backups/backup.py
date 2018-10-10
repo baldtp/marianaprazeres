@@ -13,9 +13,13 @@ import socket
 import sys
 import select
 
-s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-my_ip_address = socket.gethostbyname(socket.gethostname())
+
+def get_ip():
+    s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s_udp.connect(("8.8.8.8", 80))
+    global ip_addr
+    ip_addr = s_udp.getsockname()[0]
+    s_udp.close()
 
 
 def udp_send(msg):
@@ -40,7 +44,7 @@ def tcp_send(s, msg):
 # terminar pograma
 def ctrlc_handler(signum, frame):
     try:
-        udp_send("UNR " + my_ip_address + " " + str(bsport) + "\n")
+        udp_send("UNR " + ip_addr + " " + str(bsport) + "\n")
         s_udp.settimeout(5)
         msg = udp_receive()
         s_udp.settimeout(None)
@@ -68,7 +72,7 @@ signal.signal(signal.SIGINT, ctrlc_handler)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', default=59000)  # BSport
-    parser.add_argument('-n', default='localhost')  # CSname
+    parser.add_argument('-n', default=socket.gethostname())  # CSname
     parser.add_argument('-p', default=58066)  # CSport
     args = parser.parse_args()
     global bsport
@@ -78,10 +82,19 @@ def main():
     csname = args.n
     csport = args.p
 
-    register()
+    get_ip()
 
-    s_udp.bind((my_ip_address, bsport))
-    s_tcp.bind((my_ip_address, bsport))
+    global s_udp
+    s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    register()
+    s_udp.close()
+
+    s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s_udp.bind((ip_addr, int(bsport)))
+
+    global s_tcp
+    s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s_tcp.bind((ip_addr, int(bsport)))
     s_tcp.listen(1)
 
     input_aux = [s_udp, s_tcp]
@@ -99,8 +112,10 @@ def main():
 # registo no cs
 def register():
     try:
-        udp_send("REG " + my_ip_address + " " + str(bsport) + "\n")
+        udp_send("REG " + ip_addr + " " + str(bsport) + "\n")
+        s_udp.settimeout(5)
         msg = udp_receive()
+        s_udp.settimeout(None)
         if msg == 'RGR OK\n':
             print(msg)
         elif msg == 'RGR NOK\n':
@@ -138,9 +153,8 @@ def read_udp():
                 udp_send("ERR\n")
                 exit_abnormally()
             exit_normally()
-    except socket.timeout:
-        s_udp.settimeout(None)
-        print('Error: connection to the CS timed out.\n')
+    except OSError:
+        print('Error: a connection could not be made.\n')
 
 
 def list_files(user, dir):
