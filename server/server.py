@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# Projeto de Redes de Computadores 2018/19
+#   83429   Andre Gaspar
+#   83554   Rafael Pereira
+#   84730   Joao Afonso
+
 import socket
 import time
 import os
@@ -15,14 +20,12 @@ HOST = "localhost"
 
 def get_user_backup(name):
     backup = ''
-
     file = open("userlist.txt", "r")
     for line in file.readlines():
         if name in line:
             line = line.split(',')
             backup = line[2]
     file.close()
-
     return backup
 
 def get_backup_address(backup):
@@ -48,7 +51,6 @@ def udp_send(name, port, msg):
     s.sendto(str.encode(msg), (name, int(port)))
     s.close()
 
-
 def login(log):
     user = log[1]
     pw = log[2]
@@ -66,7 +68,6 @@ def login(log):
                 else:
                     file.close()
                     return "AUR NOK"
-
         if os.path.isfile("backuplist.txt") is False:
         	print('No available backup')
         	return "AUR NOK"
@@ -99,7 +100,6 @@ def login(log):
 		    		return "AUR NEW"
 	    		else:
 	    			continue
-
 	    	print('Error from backup')
 	    	return "AUR NOK"
 
@@ -145,10 +145,8 @@ def bs_register():
 
 def handle_requests(msg):
     global USER
-
     if len(msg) == 3:
         USER = msg[1]
-
     if msg[0] == "AUT" and len(msg) == 3:
         return login(msg)
     elif msg[0] == 'DLU':
@@ -175,6 +173,11 @@ def handle_requests(msg):
         return msg
    
     elif msg[0] == 'BCK':
+        N = msg[2]
+        leng = 3 + N * 2
+        #se o BCK estiver mal formulado BKR ERR
+        if len(msg) != leng:
+            return 'BKR ERR'
         msg_ret = ''
         fich = msg[2:]
         fich1 = ' '.join(fich)
@@ -199,6 +202,9 @@ def handle_requests(msg):
                         print(msg_ret)
         file_bs.close()
         file_us.close()
+        # se por algum motivo nao der(n haver bs ou assim) retorna EOF
+        if msg_ret == '':
+            return 'BKR EOF'
         path = 'user_' + USER + '/' + dire + '/IP_port.txt'
         #se existe um ficheiro com a info do server backup e porque ele ja tem um backup e ta registado
         if os.path.exists(path) and os.path.getsize(path) > 0:
@@ -217,12 +223,7 @@ def handle_requests(msg):
                     file.write(user + "," + pw + "," + bs[0])
                     file.close()
             print('nop')
-        
-        
-        # como ver se esta bem formulado
         return msg_ret
-
-
 
     elif msg[0] == 'RST':
         msg_ret = ''
@@ -256,7 +257,6 @@ def handle_requests(msg):
     elif msg[0] == 'LSD' :
     	counter = 0
     	msg_ret = ''
-
     	f = open('userlist.txt', 'r')
     	f = f.readlines
     	backup = ''
@@ -270,7 +270,6 @@ def handle_requests(msg):
     	return msg_ret
 
     elif msg[0] == 'LSF':
-
     	#abrir ficheiro e procurar backup do user
     	f = open('userlist.txt', 'r')
     	f = f.readlines
@@ -280,7 +279,6 @@ def handle_requests(msg):
     		if l[0] == USER:
     			backup = l[2]
     	f.close()
-
     	#abrir ficheiro e procurar ip e port do bs
     	f = open('backuplist.txt', 'r')
     	f = f.readlines()
@@ -291,16 +289,13 @@ def handle_requests(msg):
     		if l[0] == backup:
     			h = l[2]
     			p = l[3]
-
     	#enviar mensagem ao bs
     	msg = 'LSF ' + USER + ' ' + msg[1]
     	udp_send(h, p, msg)
     	reply = udp_receive()
-
     	#devolver ao user
     	if reply.split(' ')[0] == 'LFD':
     		return 'LFD ' + h + ' ' + p + ' ' + reply[4:]
-
 
     elif msg[0] == 'DEL':
         #abrir ficheiro e procurar backup do user
@@ -312,7 +307,6 @@ def handle_requests(msg):
             if l[0] == USER:
                 backup = l[2]
         f.close()
-
         #abrir ficheiro e procurar ip e port do bs
         f = open('backuplist.txt', 'r')
         f = f.readlines()
@@ -329,10 +323,8 @@ def handle_requests(msg):
         reply = udp_receive()
         msg_ret = 'DDR ' + reply
         return msg_ret
-
-    
-    return "hello"
-
+    else:
+        return 'ERR'
 
 def tcp_requests():
     try:
@@ -360,14 +352,12 @@ def tcp_requests():
                             prev = msg
                             conn.sendall(str.encode(handle_requests(msg.split()[0:3])))
                             conn.sendall(str.encode(handle_requests(msg.split()[3:])))
-
                     else:
                         if msg == prev:
                             conn.sendall(str.encode('debug')) #partir mensagem ao meio e responder duas vezes
                         else:
                             prev = msg
                             conn.sendall(str.encode(handle_requests(msg.split()))) #partir mensagem ao meio e responder duas vezes
-
                     if not data:
                         print("TCP server off")
                         so.shutdown(1)
@@ -378,7 +368,6 @@ def tcp_requests():
 
 bs_register()
 tcp_requests()
-
 while 1:
     time.sleep(5)
     print("running")

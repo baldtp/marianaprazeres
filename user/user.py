@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# Projeto de Redes de Computadores 2018/19
+#   83429   Andre Gaspar
+#   83554   Rafael Pereira
+#   84730   Joao Afonso
+
 import socket
 import argparse
 import sys
@@ -245,11 +250,9 @@ def main(argv):
 
 	while 1:
 		print("\t WELCOME TO RC'S CLOUD BACKUP SYSTEM\n\n")
-
 		if login():
 			while menu():
 				continue
-
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
