@@ -124,7 +124,7 @@ def bs_register():
                     except ValueError:
                         udp_send(msg[1], int(msg[2]), 'RGR ERR')
                 elif msg[0] == 'UNR':
-                	print('Pedido UNR')
+                    print('Pedido UNR')
                     try:
                         backup_counter -= 1
                         if os.path.isfile("backuplist.txt") == False:
@@ -176,10 +176,8 @@ def handle_requests(msg):
    
     elif msg[0] == 'BCK':
         msg_ret = ''
-        print(msg)
         fich = msg[2:]
         fich1 = ' '.join(fich)
-        print(fich1)
         dire = msg[1]
         file_us = open("userlist.txt", "r+")
         f_us = file_us.readlines()
@@ -198,11 +196,40 @@ def handle_requests(msg):
                         ip = line2[2]
                         porto = line2[3]
                         msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
+
                         #se o user nao esta registado no bs o cs troca LSU-LUR com bs e retorna lista de todos os ficheiros
                         # se estiver registado o cs troca LSF-LFD com bs e para receber a lista de ficheiros modificados
                         print(msg_ret)
-        if msg_ret == '':
-            	msg_ret = 'BKR EOF'
+      #   if user nao registado: #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      #     f = open('backuplist.txt', 'r')
+      #     f = f.readlines()
+      #     for bs in f:
+      #         bs = bs.split(',')
+      #         msg = 'LSU ' + user + ' ' + pw
+      #         udp_send(bs[2], bs[3], msg)
+      #         if udp_receive() == 'LUR OK':
+      #             file.write(user + "," + pw + "," + bs[0])
+      #             file.close()
+
+
+      #   else: #se o user ja esta registado
+         #      #abrir ficheiro e procurar ip e port do bs
+            # f = open('backuplist.txt', 'r')
+            # f = f.readlines()
+            # h = ''
+            # p = ''
+            # for line in f:
+            #   l = line.split('')
+            #   if l[0] == backup:
+            #       h = l[2]
+            #       p = l[3]
+      #     msg = 'LSF ' + USER + ' ' + msg[1]
+      #     udp_send(h, p, msg)
+      #     reply = udp_receive()
+
+        # if msg_ret == '':
+        #       msg_ret = 'BKR EOF'
+        
         file_bs.close()
         file_us.close()
         # como ver se esta bem formulado
@@ -289,37 +316,35 @@ def handle_requests(msg):
 
 
     elif msg[0] == 'DEL':
-    	#abrir ficheiro e procurar backup do user
-    	f = open('userlist.txt', 'r')
-    	f = f.readlines
-    	backup = ''
-    	for line in f:
-    		l = line.split('')
-    		if l[0] == USER:
-    			backup = l[2]
-    	f.close()
+        #abrir ficheiro e procurar backup do user
+        f = open('userlist.txt', 'r')
+        f = f.readlines
+        backup = ''
+        for line in f:
+            l = line.split('')
+            if l[0] == USER:
+                backup = l[2]
+        f.close()
 
-    	#abrir ficheiro e procurar ip e port do bs
-    	f = open('backuplist.txt', 'r')
-    	f = f.readlines()
-    	h = ''
-    	p = ''
-    	for line in f:
-    		l = line.split('')
-    		if l[0] == backup:
-    			h = l[2]
-    			p = l[3]
-    	dire = msg[1]
-    	msg_bs = 'DLB '+ USER + ' ' + dire
-    	udp_send( h, p,msg_bs)
-    	reply = udp_receive()
+        #abrir ficheiro e procurar ip e port do bs
+        f = open('backuplist.txt', 'r')
+        f = f.readlines()
+        h = ''
+        p = ''
+        for line in f:
+            l = line.split('')
+            if l[0] == backup:
+                h = l[2]
+                p = l[3]
+        dire = msg[1]
+        msg_bs = 'DLB '+ USER + ' ' + dire
+        udp_send( h, p,msg_bs)
+        reply = udp_receive()
+        msg_ret = 'DDR ' + reply
+        return msg_ret
 
-    # 	#se for bem apagado
-    # 	return 'DDR OK'
-    # 	#se nao for bem apagado
-    # 	return 'DDR NOK'
+    
     return "hello"
-
 
 
 def tcp_requests():

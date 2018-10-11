@@ -169,6 +169,7 @@ def read_udp():
         print('Error: a connection could not be made.\n')
 
 
+<<<<<<< HEAD
 # listar ficheiros duma pasta
 def list_files(user, folder):
     path = os.getcwd() + '/user_' + user + "/" + folder
@@ -210,6 +211,46 @@ def del_dir(user, folder):
 
     if os.path.isdir(path):
         res = 'NOK'
+=======
+def list_files(user, dire):
+
+    counter = 0
+    info_total = ''
+    if get_directory(dire) != False:
+        files = os.listdir(dire)
+        for file in files:          
+                counter = counter + 1
+                size = os.path.getsize(dire + '/' + file)
+                stat = os.stat(dire + '/' + file)           
+                seconds = os.path.getmtime(dire + '/' + file)
+                date_time = str(datetime.datetime.fromtimestamp(seconds).strftime("%d.%m.%Y %H:%M:%S"))
+                info = name + ' ' + date_time + ' ' + size
+                info_total = info_total + info
+    msg_ret = str(counter) + ' ' + info_total
+    return msg_ret
+    # nao deve estar bem tem de ser testado e merdas
+
+def up_user(user, pw):
+    fich = 'user_' + user +'.txt'
+    file_us = open( fich, "r+")
+    if pw in file_us:
+        msg_ret = 'status = OK'
+    else: 
+        msg_ret = 'status = NOK'
+        return msg_ret
+    # como é o caso de erro, falta testar
+
+
+def del_dir(user, dir):
+    directory = 'user_' + user_ #remover todos as pastas que tenham o diretorio directory
+
+    msg_ret = ''
+
+    # msg_ret = 'OK'
+    # msg_ret = 'NOK'
+    return msg_ret
+    #NOT FINISED
+>>>>>>> 68e067289e546c69705af9567e9a97776b97253b
 
     else:
         res = 'OK'
