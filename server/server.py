@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# Projeto de Redes de Computadores 2018/19
+#   83429   Andre Gaspar
+#   83554   Rafael Pereira
+#   84730   Joao Afonso
+
 import socket
 import time
 import os
@@ -15,14 +20,12 @@ HOST = "localhost"
 
 def get_user_backup(name):
     backup = ''
-
     file = open("userlist.txt", "r")
     for line in file.readlines():
         if name in line:
             line = line.split(',')
             backup = line[2]
     file.close()
-
     return backup
 
 def get_backup_address(backup):
@@ -48,7 +51,6 @@ def udp_send(name, port, msg):
     s.sendto(str.encode(msg), (name, int(port)))
     s.close()
 
-
 def login(log):
     user = log[1]
     pw = log[2]
@@ -66,7 +68,6 @@ def login(log):
                 else:
                     file.close()
                     return "AUR NOK"
-
         if os.path.isfile("backuplist.txt") is False:
         	print('No available backup')
         	return "AUR NOK"
@@ -99,7 +100,6 @@ def login(log):
 		    		return "AUR NEW"
 	    		else:
 	    			continue
-
 	    	print('Error from backup')
 	    	return "AUR NOK"
 
@@ -145,10 +145,10 @@ def bs_register():
 
 def handle_requests(msg):
     global USER
-
+    global PW
     if len(msg) == 3:
         USER = msg[1]
-
+        PW = msg[2]
     if msg[0] == "AUT" and len(msg) == 3:
         return login(msg)
     elif msg[0] == 'DLU':
@@ -175,6 +175,11 @@ def handle_requests(msg):
         return msg
    
     elif msg[0] == 'BCK':
+        N = msg[2]
+        leng = 3 + int(N) * 4
+        if len(msg) != leng:
+        	print('tas?')
+        	return 'BKR ERR'
         msg_ret = ''
         fich = msg[2:]
         fich1 = ' '.join(fich)
@@ -186,56 +191,47 @@ def handle_requests(msg):
         f_bs = file_bs.readlines()
         file_bs.seek(0)
         for line1 in f_us:
-            line1 = line1.split(',')
-            if dire in line1[3]:
-                bs = line1[2]
-                for line2 in f_bs:
-                    line2 = line2.strip('\n')
-                    line2 = line2.split(',')
-                    if bs == line2[0]:
-                        ip = line2[2]
-                        porto = line2[3]
-                        msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
-
-                        #se o user nao esta registado no bs o cs troca LSU-LUR com bs e retorna lista de todos os ficheiros
-                        # se estiver registado o cs troca LSF-LFD com bs e para receber a lista de ficheiros modificados
-                        print(msg_ret)
-      #   if user nao registado: #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      #     f = open('backuplist.txt', 'r')
-      #     f = f.readlines()
-      #     for bs in f:
-      #         bs = bs.split(',')
-      #         msg = 'LSU ' + user + ' ' + pw
-      #         udp_send(bs[2], bs[3], msg)
-      #         if udp_receive() == 'LUR OK':
-      #             file.write(user + "," + pw + "," + bs[0])
-      #             file.close()
-
-
-      #   else: #se o user ja esta registado
-         #      #abrir ficheiro e procurar ip e port do bs
-            # f = open('backuplist.txt', 'r')
-            # f = f.readlines()
-            # h = ''
-            # p = ''
-            # for line in f:
-            #   l = line.split('')
-            #   if l[0] == backup:
-            #       h = l[2]
-            #       p = l[3]
-      #     msg = 'LSF ' + USER + ' ' + msg[1]
-      #     udp_send(h, p, msg)
-      #     reply = udp_receive()
-
-        # if msg_ret == '':
-        #       msg_ret = 'BKR EOF'
-        
+        	line1 = line1.split(',')
+        	if dire in line1[3]:
+        		bs = line1[2]
+        		for line2 in f_bs:
+        			line2 = line2.strip('\n')
+        			line2 = line2.split(',')
+        			if bs == line2[0]:
+        				ip = line2[2]
+        				porto = line2[3]
+        				print('ola')
+        				msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
+        				print(msg_ret)
         file_bs.close()
         file_us.close()
-        # como ver se esta bem formulado
+        if msg_ret == '': # se por algum motivo nao der(n haver bs ou assim) retorna EOF
+        	return 'BKR EOF'
+        path = 'user_' + USER + '/' + dire + '/IP_port.txt'
+        #se existe um ficheiro com a info do server backup e porque ele ja tem um backup e ta registado
+        #temos de ver os ficheiros que nao estao guardados ou que foram alterados para fazer backup desses
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+        	print('LSF')
+        	msg = 'LSF ' + USER + ' ' + msg[1]
+        	udp_send(h, p, msg)
+        	ficheiros_para_backup = fich1[1:]
+        	ficheiros_em_backup = udp_receive()[1:]
+        	print('SUUUUU')
+        else: # nao esta registado
+        	print('LSU')
+        	f = open('backuplist.txt', 'r')
+        	f = f.readlines()
+        	for bs in f:
+        		bs = bs.split(',')
+        		msg_bs = 'LSU ' + USER + ' ' + PW
+        		udp_send(bs[2], bs[3], msg_bs)
+        		if udp_receive() == 'LUR OK':
+        			return fich1
+        		elif udp_receive() == 'LUR NOK':
+        			print('nop')
+
+        # falta acabar este if e else mas acho que esta' quase bem
         return msg_ret
-
-
 
     elif msg[0] == 'RST':
         msg_ret = ''
@@ -269,7 +265,6 @@ def handle_requests(msg):
     elif msg[0] == 'LSD' :
     	counter = 0
     	msg_ret = ''
-
     	f = open('userlist.txt', 'r')
     	f = f.readlines
     	backup = ''
@@ -283,7 +278,6 @@ def handle_requests(msg):
     	return msg_ret
 
     elif msg[0] == 'LSF':
-
     	#abrir ficheiro e procurar backup do user
     	f = open('userlist.txt', 'r')
     	f = f.readlines
@@ -293,7 +287,6 @@ def handle_requests(msg):
     		if l[0] == USER:
     			backup = l[2]
     	f.close()
-
     	#abrir ficheiro e procurar ip e port do bs
     	f = open('backuplist.txt', 'r')
     	f = f.readlines()
@@ -304,16 +297,13 @@ def handle_requests(msg):
     		if l[0] == backup:
     			h = l[2]
     			p = l[3]
-
     	#enviar mensagem ao bs
     	msg = 'LSF ' + USER + ' ' + msg[1]
     	udp_send(h, p, msg)
     	reply = udp_receive()
-
     	#devolver ao user
     	if reply.split(' ')[0] == 'LFD':
     		return 'LFD ' + h + ' ' + p + ' ' + reply[4:]
-
 
     elif msg[0] == 'DEL':
         #abrir ficheiro e procurar backup do user
@@ -325,7 +315,6 @@ def handle_requests(msg):
             if l[0] == USER:
                 backup = l[2]
         f.close()
-
         #abrir ficheiro e procurar ip e port do bs
         f = open('backuplist.txt', 'r')
         f = f.readlines()
@@ -342,10 +331,8 @@ def handle_requests(msg):
         reply = udp_receive()
         msg_ret = 'DDR ' + reply
         return msg_ret
-
-    
-    return "hello"
-
+    else:
+        return 'ERR'
 
 def tcp_requests():
     try:
@@ -373,14 +360,12 @@ def tcp_requests():
                             prev = msg
                             conn.sendall(str.encode(handle_requests(msg.split()[0:3])))
                             conn.sendall(str.encode(handle_requests(msg.split()[3:])))
-
                     else:
                         if msg == prev:
                             conn.sendall(str.encode('debug')) #partir mensagem ao meio e responder duas vezes
                         else:
                             prev = msg
                             conn.sendall(str.encode(handle_requests(msg.split()))) #partir mensagem ao meio e responder duas vezes
-
                     if not data:
                         print("TCP server off")
                         so.shutdown(1)
@@ -391,7 +376,6 @@ def tcp_requests():
 
 bs_register()
 tcp_requests()
-
 while 1:
     time.sleep(5)
     print("running")
