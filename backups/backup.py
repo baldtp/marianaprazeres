@@ -16,16 +16,6 @@ import shutil
 import datetime
 
 
-# enviar msg por tcp
-def tcp_send(s, msg):
-    totalsent = 0
-    while totalsent < len(msg):
-        sent = s.send(msg[totalsent:])
-        if sent == 0:
-            raise RuntimeError("Socket connection broken\n")
-        totalsent = totalsent + sent
-
-
 # terminar pograma
 def ctrlc_handler(signum, frame):
     try:
@@ -57,6 +47,7 @@ def ctrlc_handler(signum, frame):
 
 
 signal.signal(signal.SIGINT, ctrlc_handler)
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 
 # main
@@ -72,7 +63,7 @@ def main():
     global s_tcp
     s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s_tcp.bind((ip_addr, int(bsport)))
-    s_tcp.listen(1)
+    s_tcp.listen(5)
 
     while True:
         inputready, outputready, exceptready = select.select([s_udp, s_tcp], [], [])
@@ -90,11 +81,11 @@ def main():
 
 # obter ip
 def get_ip():
-    s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s_udp.connect(("8.8.8.8", 80))
+    s_ip = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s_ip.connect(("8.8.8.8", 80))
     global ip_addr
-    ip_addr = s_udp.getsockname()[0]
-    s_udp.close()
+    ip_addr = s_ip.getsockname()[0]
+    s_ip.close()
 
 
 # obter args
@@ -115,12 +106,12 @@ def get_args():
 # registar no cs
 def register():
     try:
-        s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s_udp.sendto(str.encode("REG " + ip_addr + " " + str(bsport) + "\n"), (csname, int(csport)))
-        s_udp.settimeout(5)
-        msg = s_udp.recvfrom(300)[0].decode()
-        s_udp.settimeout(None)
-        s_udp.close()
+        s_reg = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s_reg.sendto(str.encode("REG " + ip_addr + " " + str(bsport) + "\n"), (csname, int(csport)))
+        s_reg.settimeout(5)
+        msg = s_reg.recvfrom(300)[0].decode()
+        s_reg.settimeout(None)
+        s_reg.close()
 
         if msg == 'RGR OK\n':
             print(msg)
@@ -171,7 +162,7 @@ def read_udp():
 
 # listar ficheiros duma pasta
 def list_files(user, folder):
-    path = os.getcwd() + '/user_' + user + "/" + folder
+    path = 'user_' + user + "/" + folder
     files = os.listdir(path)
     res = str(len(files))
 
@@ -205,7 +196,7 @@ def reg_user(user, pw):
 
 # apagar pasta
 def del_dir(user, folder):
-    path = os.getcwd() + '/user_' + user + "/" + folder
+    path = 'user_' + user + "/" + folder
     shutil.rmtree(path, ignore_errors=True)
 
     if os.path.isdir(path):
@@ -223,19 +214,24 @@ def read_tcp():
         conn, addr = s_tcp.accept()
         pid = os.fork()
         if pid == 0:
-            msg = conn.recv(1024).decode().split()
+            msg = conn.recv(1024).decode().split(None, 3)
 
             if msg[0] == 'AUT':
-                tcp_send(conn, str.encode("AUR " + aut(msg[1], msg[2]) + "\n"))
+                user = msg[1]
+                conn.sendall(str.encode("AUR " + aut(user, msg[2]) + "\n"))
+                msg = conn.recv(1024).decode().split(None, 3)
 
-            elif msg[0] == 'UPL':
-                tcp_send(conn, str.encode("UPR " + up_files(msg[1], msg[2]) + "\n"))
+                if msg[0] == 'UPL':
+                    conn.sendall(str.encode("UPR " + up_files(user, msg[1], msg[2], conn) + "\n"))
 
-            elif msg[0] == 'RSB':
-                tcp_send(conn, str.encode("RBR " + down_files(msg[1]) + "\n"))
+                elif msg[0] == 'RSB':
+                    if len(msg) > 2:
+                        conn.sendall(str.encode("RBR ERR\n"))
+                    else:
+                        conn.sendall(str.encode("RBR " + down_files(user, msg[1]) + "\n"))
 
             else:
-                tcp_send(conn, str.encode('ERR\n'))
+                conn.sendall(str.encode('ERR\n'))
                 conn.close()
                 exit_abnormally()
 
@@ -250,18 +246,42 @@ def read_tcp():
 
 
 def aut(user, pw):
+    filename = 'user_' + user + '.txt'
+    with open(filename, "r") as file:
+
+        if pw == file.read():
+            res = 'OK'
+
+        else:
+            res = 'NOK'
+
+    return res
+
+
+def up_files(user, folder, n, conn):
     return ''
     # todo
 
 
-def up_files(dir, nr):
-    return ''
-    # todo
+def down_files(user, folder):
+    path = 'user_' + user + "/" + folder
 
+    if os.path.isdir(path):
+        files = os.listdir(path)
+        res = str(len(files))
 
-def down_files(dir):
-    return ''
-    # todo
+        for file in files:
+            with open(path + '/' + file, "rb") as down_file:
+                file_data = down_file.read()
+            info = os.stat(path + '/' + file)
+            date_time = datetime.datetime.fromtimestamp(info.st_mtime).strftime("%d.%m.%Y %H:%M:%S")
+            file_info = file + ' ' + date_time + ' ' + str(info.st_size) + ' ' + file_data.decode()
+            res = res + ' ' + file_info
+
+    else:
+        res = 'EOF'
+
+    return res
 
 
 def exit_abnormally():
