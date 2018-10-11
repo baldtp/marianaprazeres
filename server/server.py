@@ -145,8 +145,10 @@ def bs_register():
 
 def handle_requests(msg):
     global USER
+    global PW
     if len(msg) == 3:
         USER = msg[1]
+        PW = msg[2]
     if msg[0] == "AUT" and len(msg) == 3:
         return login(msg)
     elif msg[0] == 'DLU':
@@ -174,10 +176,10 @@ def handle_requests(msg):
    
     elif msg[0] == 'BCK':
         N = msg[2]
-        leng = 3 + N * 2
-        #se o BCK estiver mal formulado BKR ERR
+        leng = 3 + int(N) * 4
         if len(msg) != leng:
-            return 'BKR ERR'
+        	print('tas?')
+        	return 'BKR ERR'
         msg_ret = ''
         fich = msg[2:]
         fich1 = ' '.join(fich)
@@ -189,40 +191,46 @@ def handle_requests(msg):
         f_bs = file_bs.readlines()
         file_bs.seek(0)
         for line1 in f_us:
-            line1 = line1.split(',')
-            if dire in line1[3]:
-                bs = line1[2]
-                for line2 in f_bs:
-                    line2 = line2.strip('\n')
-                    line2 = line2.split(',')
-                    if bs == line2[0]:
-                        ip = line2[2]
-                        porto = line2[3]
-                        msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
-                        print(msg_ret)
+        	line1 = line1.split(',')
+        	if dire in line1[3]:
+        		bs = line1[2]
+        		for line2 in f_bs:
+        			line2 = line2.strip('\n')
+        			line2 = line2.split(',')
+        			if bs == line2[0]:
+        				ip = line2[2]
+        				porto = line2[3]
+        				print('ola')
+        				msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
+        				print(msg_ret)
         file_bs.close()
         file_us.close()
-        # se por algum motivo nao der(n haver bs ou assim) retorna EOF
-        if msg_ret == '':
-            return 'BKR EOF'
+        if msg_ret == '': # se por algum motivo nao der(n haver bs ou assim) retorna EOF
+        	return 'BKR EOF'
         path = 'user_' + USER + '/' + dire + '/IP_port.txt'
         #se existe um ficheiro com a info do server backup e porque ele ja tem um backup e ta registado
+        #temos de ver os ficheiros que nao estao guardados ou que foram alterados para fazer backup desses
         if os.path.exists(path) and os.path.getsize(path) > 0:
-            msg = 'LSF ' + USER + ' ' + msg[1]
-            udp_send(h, p, msg)
-            reply = udp_receive()
-            print('SUUUUU')
+        	print('LSF')
+        	msg = 'LSF ' + USER + ' ' + msg[1]
+        	udp_send(h, p, msg)
+        	ficheiros_para_backup = fich1[1:]
+        	ficheiros_em_backup = udp_receive()[1:]
+        	print('SUUUUU')
         else: # nao esta registado
-            f = open('backuplist.txt', 'r')
-            f = f.readlines()
-            for bs in f:
-                bs = bs.split(',')
-                msg_bs = 'LSU ' + user + ' ' + pw
-                udp_send(bs[2], bs[3], msg_bs)
-                if udp_receive() == 'LUR OK':
-                    file.write(user + "," + pw + "," + bs[0])
-                    file.close()
-            print('nop')
+        	print('LSU')
+        	f = open('backuplist.txt', 'r')
+        	f = f.readlines()
+        	for bs in f:
+        		bs = bs.split(',')
+        		msg_bs = 'LSU ' + USER + ' ' + PW
+        		udp_send(bs[2], bs[3], msg_bs)
+        		if udp_receive() == 'LUR OK':
+        			return fich1
+        		elif udp_receive() == 'LUR NOK':
+        			print('nop')
+
+        # falta acabar este if e else mas acho que esta' quase bem
         return msg_ret
 
     elif msg[0] == 'RST':
