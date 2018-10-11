@@ -205,6 +205,10 @@ def del_dir(user, folder):
     else:
         res = 'OK'
 
+    if not os.listdir('user_' + user):
+        os.rmdir('user_' + user)
+        os.remove('user_' + user + '.txt')
+
     return res
 
 
@@ -222,7 +226,7 @@ def read_tcp():
                 msg = conn.recv(1024).decode().split(None, 3)
 
                 if msg[0] == 'UPL':
-                    conn.sendall(str.encode("UPR " + up_files(user, msg[1], msg[2], conn) + "\n"))
+                    conn.sendall(str.encode("UPR " + up_files(user, msg, conn) + "\n"))
 
                 elif msg[0] == 'RSB':
                     if len(msg) > 2:
@@ -258,9 +262,46 @@ def aut(user, pw):
     return res
 
 
-def up_files(user, folder, n, conn):
-    return ''
-    # todo
+def up_files(user, msg, conn):
+    folder = msg[1]
+    n = int(msg[2])
+    data = msg[3]
+    while n > 0:
+        split_data = data.split(None, 3)
+
+        if len(split_data) < 4:
+            data = data + conn.recv(1024).decode()
+
+        else:
+            filename = split_data[0]
+            file_path = 'user_' + user + '/' + folder + '/' + filename
+            string_time = split_data[1]
+            int_time = datetime.datetime.strptime(string_time, "%d.%m.%Y %H:%M:%S").timestamp()
+            file_size = int(split_data[2])
+            file_data = split_data[3]
+            recv_data = len(str.encode(file_data))
+
+            while recv_data < file_size:
+                file_aux = conn.recv(1024).decode()
+                file_data = file_data + file_aux
+                recv_data = recv_data + len(file_aux)
+
+            if recv_data > file_size:
+                file_aux2 = file_data.split(None, 1)
+                data = file_aux2[1]
+                data_file = file_aux2[0]
+
+            else:
+                data_file = file_data
+                data = ''
+
+            with open(file_path, 'wb') as file:
+                file.write(str.encode(data_file))
+                os.utime(file_path, (int_time, int_time))
+
+            n -= 1
+
+    return 'OK'
 
 
 def down_files(user, folder):
