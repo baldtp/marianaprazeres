@@ -9,7 +9,7 @@ import datetime
 #iniciar programa - flags
 parser = argparse.ArgumentParser()
 parser.add_argument('-n', default = "localhost") #CSname
-parser.add_argument('-p', default = 58068) #CSport
+parser.add_argument('-p', default = 58066) #CSport
 args = parser.parse_args()
 #global HOST
 HOST = args.n

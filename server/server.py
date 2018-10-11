@@ -196,42 +196,29 @@ def handle_requests(msg):
                         ip = line2[2]
                         porto = line2[3]
                         msg_ret = 'BKR ' + ip + ' ' + porto + ' ' + fich1
-
-                        #se o user nao esta registado no bs o cs troca LSU-LUR com bs e retorna lista de todos os ficheiros
-                        # se estiver registado o cs troca LSF-LFD com bs e para receber a lista de ficheiros modificados
                         print(msg_ret)
-      #   if user nao registado: #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      #     f = open('backuplist.txt', 'r')
-      #     f = f.readlines()
-      #     for bs in f:
-      #         bs = bs.split(',')
-      #         msg = 'LSU ' + user + ' ' + pw
-      #         udp_send(bs[2], bs[3], msg)
-      #         if udp_receive() == 'LUR OK':
-      #             file.write(user + "," + pw + "," + bs[0])
-      #             file.close()
-
-
-      #   else: #se o user ja esta registado
-         #      #abrir ficheiro e procurar ip e port do bs
-            # f = open('backuplist.txt', 'r')
-            # f = f.readlines()
-            # h = ''
-            # p = ''
-            # for line in f:
-            #   l = line.split('')
-            #   if l[0] == backup:
-            #       h = l[2]
-            #       p = l[3]
-      #     msg = 'LSF ' + USER + ' ' + msg[1]
-      #     udp_send(h, p, msg)
-      #     reply = udp_receive()
-
-        # if msg_ret == '':
-        #       msg_ret = 'BKR EOF'
-        
         file_bs.close()
         file_us.close()
+        path = 'user_' + USER + '/' + dire + '/IP_port.txt'
+        #se existe um ficheiro com a info do server backup e porque ele ja tem um backup e ta registado
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            msg = 'LSF ' + USER + ' ' + msg[1]
+            udp_send(h, p, msg)
+            reply = udp_receive()
+            print('SUUUUU')
+        else: # nao esta registado
+            f = open('backuplist.txt', 'r')
+            f = f.readlines()
+            for bs in f:
+                bs = bs.split(',')
+                msg_bs = 'LSU ' + user + ' ' + pw
+                udp_send(bs[2], bs[3], msg_bs)
+                if udp_receive() == 'LUR OK':
+                    file.write(user + "," + pw + "," + bs[0])
+                    file.close()
+            print('nop')
+        
+        
         # como ver se esta bem formulado
         return msg_ret
 
